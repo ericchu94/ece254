@@ -63,6 +63,8 @@ int main(int argc, char *argv[]) {
 		char month[3];
 		int day;
 		char year[5];
+		char *link = "";
+		char *arrow = "";
 
 		// filename
 		if (name == NULL) {
@@ -83,6 +85,13 @@ int main(int argc, char *argv[]) {
 			perm[0] = 'd';
 		} else if (S_ISLNK(mode)) {
 			perm[0] = 'l';
+
+			// get destination
+			link = (char *)malloc(buf.st_size + 1);
+			int r = readlink(name, link, buf.st_size + 1);
+			link[r] = '\0';
+
+			arrow = " -> ";
 		}
 
 		perm[1] = (mode & S_IRUSR) ? 'r' : '-';
@@ -145,7 +154,11 @@ int main(int argc, char *argv[]) {
 			sprintf(year, "%d", ltime->tm_year + 1900);
 		}
 
-		printf("%s %s %s %d %s %d %s %s\n", perm, username, group, size, month, day, year, name);
+		printf("%s %s %s %d %s %d %s %s%s%s\n", perm, username, group, size, month, day, year, name, arrow, link);
+
+		if (link[0] != '\0') {
+			free(link);
+		}
 	}
 
 	return 0;
