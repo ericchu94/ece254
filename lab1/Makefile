@@ -1,6 +1,6 @@
 # Makefile
-# User Id:          e8chu
-# Student number:   20491864
+# User Id:          e8chu    karamana
+# Student number:   20491864 20480776
 # Course:           ECE254
 # Date:             September 11, 2014
 
