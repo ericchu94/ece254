@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
 void run(int n, int b) {
     // Create variables to hold the start and end times
-    struct timeval forktime, generatetime, finaltime;
+    double forktime, generatetime, finaltime;
     // Queue variables
     mqd_t mqdes;
     // Fork return
@@ -55,12 +55,10 @@ void run(int n, int b) {
         gettime(&finaltime);
 
         // Output times
-        printf("Time to initialize system: %u.%u seconds\n",
-            generatetime.tv_sec - forktime.tv_sec,
-            generatetime.tv_usec - forktime.tv_usec);
-        printf("Time to transmit data: %u.%u seconds\n",
-            finaltime.tv_sec - generatetime.tv_sec,
-            finaltime.tv_usec - generatetime.tv_usec);
+        printf("Time to initialize system: %0.6lf seconds\n",
+            generatetime - forktime);
+        printf("Time to transmit data: %0.6lf seconds\n",
+            finaltime - generatetime);
     } else { 
         perror("fork() failed");
         exit(9);
@@ -115,10 +113,12 @@ void setuprand() {
     srand(seed);
 }
 
-void gettime(struct timeval *tv) {
-    if (gettimeofday(tv, NULL)) {
+void gettime(double *val) {
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL)) {
         perror("gettimeofday() failed");
         exit(4);
     }
+    *val = tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 

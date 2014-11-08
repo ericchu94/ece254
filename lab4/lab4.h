@@ -6,6 +6,6 @@ void produce(int n, mqd_t *mqdes);
 void consume(int n, mqd_t *mqdes);
 void setupmq(mqd_t *mqdes, int b);
 void setuprand();
-void gettime(struct timeval *tv);
+void gettime(double *val);
 
 #endif
