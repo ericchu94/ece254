@@ -14,7 +14,13 @@ int main(int argc, char *argv[]) {
     p = getint(argv[3]);
     c = getint(argv[4]);
 
+    run(n, b, p, c);
+
     return 0;
+}
+
+void run(int n, int b, int p, int c) {
+
 }
 
 int getint(char str[]) {
