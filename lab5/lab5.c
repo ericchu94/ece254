@@ -53,7 +53,7 @@ static void * produce(void *arg) {
 
     for (; produced < n; val += p) {
         if (sem_wait(&buffer_size) == -1) {
-            perror("sem_wailt() failed");
+            perror("sem_wait() failed");
             exit(EXIT_FAILURE);
         }
         err = pthread_mutex_lock(&mutex);
@@ -79,7 +79,9 @@ static void * produce(void *arg) {
 static void * consume(void *arg) {
     int id = *(int *)arg;
 
-    printf("cid = %d\n", id);
+    while (consumed < n) {
+        // TODO create another sem for consumer
+    }
 
     return NULL;
 }
