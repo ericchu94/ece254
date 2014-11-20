@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <mqueue.h>
 #include <math.h>
+#include <sys/wait.h>
 #include "lab4.h"
 
 #define MQ_NAME "/e8chu"
