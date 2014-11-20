@@ -42,38 +42,24 @@ void run() {
     join_threads(producers, p);
     join_threads(consumers, c);
 
-    // TODO extract and free mutex/sem
-    free(buffer);
+    // destroy buffer and sem/mut
+    destroy_buffer();
 }
 
 static void * produce(void *arg) {
     int id = *(int *)arg;
-    int err;
 
     int val;
     for (val = id; val < n; val += p) {
-        if (sem_wait(&empty) == -1) {
-            perror("sem_wait() failed");
-            exit(EXIT_FAILURE);
-        }
+        wait(&empty);
 
-        err = pthread_mutex_lock(&mutex);
-        if (err) {
-            perror("pthread_mutex_lock() failed");
-            exit(EXIT_FAILURE);
-        }
+        lock(&mutex);
         
         push(val);
 
-        err = pthread_mutex_unlock(&mutex);
-        if (err) {
-            perror("pthread_mutex_unlock() failed");
-            exit(EXIT_FAILURE);
-        }
-        if (sem_post(&fill) == -1) {
-            perror("sem_post() failed");
-            exit(EXIT_FAILURE);
-        }
+        unlock(&mutex);
+
+        post(&fill);
     }
 
     return NULL;
@@ -82,7 +68,6 @@ static void * produce(void *arg) {
 static void * consume(void *arg) {
     int id = *(int *)arg;
     int val;
-    int err;
     int root;
 
     int i;
@@ -92,16 +77,9 @@ static void * consume(void *arg) {
     }
 
     for (i = 0; i < count; ++i) {
-        if (sem_wait(&fill) == -1) {
-            perror("sem_wait() failed");
-            exit(EXIT_FAILURE);
-        }
+        wait(&fill);
 
-        err = pthread_mutex_lock(&mutex);
-        if (err) {
-            perror("pthread_mutex_lock() failed");
-            exit(EXIT_FAILURE);
-        }
+        lock(&mutex);
 
         val = shift();
         root = sqrt(val);
@@ -109,16 +87,9 @@ static void * consume(void *arg) {
             printf("%d %d %d\n", id ,val, root);
         }
 
-        err = pthread_mutex_unlock(&mutex);
-        if (err) {
-            perror("pthread_mutex_unlock() failed");
-            exit(EXIT_FAILURE);
-        }
+        unlock(&mutex);
 
-        if (sem_post(&empty) == -1) {
-            perror("sem_post() failed");
-            exit(EXIT_FAILURE);
-        }
+        post(&empty);
     }
 
     return NULL;
@@ -195,6 +166,38 @@ void join_threads(struct thread threads[], int thread_count) {
     }
 }
 
+void unlock(pthread_mutex_t *mutex) {
+    int err = pthread_mutex_unlock(mutex);
+    if (err) {
+        errno = err;
+        perror("pthread_mutex_unlock() failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void lock(pthread_mutex_t *mutex) {
+    int err = pthread_mutex_lock(mutex);
+    if (err) {
+        errno = err;
+        perror("pthread_mutex_lock() failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void post(sem_t *sem) {
+    if (sem_post(sem) == -1) {
+        perror("sem_post() failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void wait(sem_t *sem) {
+    if (sem_wait(sem) == -1) {
+        perror("sem_wait() failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void initialise_buffer() {
     int err = pthread_mutex_init(&mutex, NULL);
     if (err) {
@@ -215,6 +218,24 @@ void initialise_buffer() {
         perror("malloc() failed");
         exit(EXIT_FAILURE);
     }
+}
+
+void destroy_buffer() {
+    int err = pthread_mutex_destroy(&mutex);
+    if (err) {
+        errno = err;
+        perror("pthread_mutex_destroy() failed");
+        exit(EXIT_FAILURE);
+    }
+    if (sem_destroy(&fill) == -1) {
+        perror("sem_destroy() failed");
+        exit(EXIT_FAILURE);
+    }
+    if (sem_destroy(&empty) == -1) {
+        perror("sem_destroy() failed");
+        exit(EXIT_FAILURE);
+    }
+    free(buffer);
 }
 
 int getint(char str[]) {

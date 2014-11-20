@@ -16,6 +16,11 @@ void create_thread(pthread_t *thread, void *(*start_routine) (void *), void *arg
 void create_producers(struct thread producers[]);
 void create_consumers(struct thread consumers[]);
 void join_threads(struct thread threads[], int thread_count);
+void lock(pthread_mutex_t *mutex);
+void unlock(pthread_mutex_t *mutex);
+void wait(sem_t *sem);
+void post(sem_t *sem);
 void initialise_buffer();
+void destroy_buffer();
 
 #endif
