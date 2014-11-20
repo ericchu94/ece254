@@ -82,14 +82,15 @@ static void * consume(void *arg) {
         lock(&mutex);
 
         val = shift();
-        root = sqrt(val);
-        if (root * root == val) {
-            printf("%d %d %d\n", id ,val, root);
-        }
 
         unlock(&mutex);
 
         post(&empty);
+
+        root = sqrt(val);
+        if (root * root == val) {
+            printf("%d %d %d\n", id ,val, root);
+        }
     }
 
     return NULL;
