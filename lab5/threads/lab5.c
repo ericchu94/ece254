@@ -3,7 +3,8 @@
 #include <pthread.h>
 #include <errno.h>
 #include <semaphore.h>
-#include "math.h"
+#include <math.h>
+#include <sys/time.h>
 #include "lab5.h"
 
 int n, b, p, c;
@@ -30,17 +31,24 @@ int main(int argc, char *argv[]) {
 }
 
 void run() {
+    double start, end;
     struct thread producers[p];
     struct thread consumers[c];
 
     // also initialises fill/empty & mutex
     initialise_buffer();
 
+    gettime(&start);
+
     create_producers(producers);
     create_consumers(consumers);
 
     join_threads(producers, p);
     join_threads(consumers, c);
+
+    gettime(&end);
+
+    printf("System execution time: %.6lf\n", end - start);
 
     // destroy buffer and sem/mut
     destroy_buffer();
@@ -237,6 +245,15 @@ void destroy_buffer() {
         exit(EXIT_FAILURE);
     }
     free(buffer);
+}
+
+void gettime(double *val) {
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL)) {
+        perror("gettimeofday() failed");
+        exit(EXIT_FAILURE);
+    }
+    *val = tv.tv_sec + tv.tv_usec / 1000000.0;
 }
 
 int getint(char str[]) {

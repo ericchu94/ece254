@@ -22,5 +22,6 @@ void wait(sem_t *sem);
 void post(sem_t *sem);
 void initialise_buffer();
 void destroy_buffer();
+void gettime(double *val);
 
 #endif
