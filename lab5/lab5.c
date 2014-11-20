@@ -11,7 +11,6 @@ int *buffer;
 int buffer_start, buffer_end;
 sem_t empty, fill;
 pthread_mutex_t mutex;
-int produced, consumed;
 
 int main(int argc, char *argv[]) {
 
@@ -49,10 +48,10 @@ void run() {
 
 static void * produce(void *arg) {
     int id = *(int *)arg;
-    int val = id;
     int err;
 
-    while(produced < n) {
+    int val;
+    for (val = id; val < n; val += p) {
         if (sem_wait(&empty) == -1) {
             perror("sem_wait() failed");
             exit(EXIT_FAILURE);
@@ -65,7 +64,6 @@ static void * produce(void *arg) {
         }
         
         push(val);
-        ++produced;
 
         err = pthread_mutex_unlock(&mutex);
         if (err) {
@@ -76,12 +74,6 @@ static void * produce(void *arg) {
             perror("sem_post() failed");
             exit(EXIT_FAILURE);
         }
-        val += p;
-    }
-
-    if (sem_post(&empty) == -1) {
-        perror("sem_post() failed");
-        exit(EXIT_FAILURE);
     }
 
     return NULL;
@@ -93,7 +85,13 @@ static void * consume(void *arg) {
     int err;
     int root;
 
-    while (consumed < n) {
+    int i;
+    int count = n / c;
+    if (id < n - count * c) {
+        ++count;
+    }
+
+    for (i = 0; i < count; ++i) {
         if (sem_wait(&fill) == -1) {
             perror("sem_wait() failed");
             exit(EXIT_FAILURE);
@@ -105,13 +103,10 @@ static void * consume(void *arg) {
             exit(EXIT_FAILURE);
         }
 
-        if (consumed < n) {
-            val = shift();
-            root = sqrt(val);
-            if (root * root == val) {
-                printf("%d %d %d\n", id ,val, root);
-            }
-            ++consumed;
+        val = shift();
+        root = sqrt(val);
+        if (root * root == val) {
+            printf("%d %d %d\n", id ,val, root);
         }
 
         err = pthread_mutex_unlock(&mutex);
@@ -124,11 +119,6 @@ static void * consume(void *arg) {
             perror("sem_post() failed");
             exit(EXIT_FAILURE);
         }
-    }
-
-    if (sem_post(&fill) == -1) {
-        perror("sem_post() failed");
-        exit(EXIT_FAILURE);
     }
 
     return NULL;
