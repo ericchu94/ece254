@@ -3,12 +3,13 @@
 #include <pthread.h>
 #include <errno.h>
 #include <semaphore.h>
+#include "math.h"
 #include "lab5.h"
 
 int n, b, p, c;
 int *buffer;
 int buffer_start, buffer_end;
-sem_t buffer_size;
+sem_t empty, fill;
 pthread_mutex_t mutex;
 int produced, consumed;
 
@@ -33,7 +34,7 @@ void run() {
     struct thread producers[p];
     struct thread consumers[c];
 
-    // also initialises buffer_size & mutex
+    // also initialises fill/empty & mutex
     initialise_buffer();
 
     create_producers(producers);
@@ -51,11 +52,12 @@ static void * produce(void *arg) {
     int val = id;
     int err;
 
-    for (; produced < n; val += p) {
-        if (sem_wait(&buffer_size) == -1) {
+    while(produced < n) {
+        if (sem_wait(&empty) == -1) {
             perror("sem_wait() failed");
             exit(EXIT_FAILURE);
         }
+
         err = pthread_mutex_lock(&mutex);
         if (err) {
             perror("pthread_mutex_lock() failed");
@@ -64,13 +66,22 @@ static void * produce(void *arg) {
         
         push(val);
         ++produced;
-        printf("stored %d\n", val);
 
         err = pthread_mutex_unlock(&mutex);
         if (err) {
             perror("pthread_mutex_unlock() failed");
             exit(EXIT_FAILURE);
         }
+        if (sem_post(&fill) == -1) {
+            perror("sem_post() failed");
+            exit(EXIT_FAILURE);
+        }
+        val += p;
+    }
+
+    if (sem_post(&empty) == -1) {
+        perror("sem_post() failed");
+        exit(EXIT_FAILURE);
     }
 
     return NULL;
@@ -78,9 +89,46 @@ static void * produce(void *arg) {
 
 static void * consume(void *arg) {
     int id = *(int *)arg;
+    int val;
+    int err;
+    int root;
 
     while (consumed < n) {
-        // TODO create another sem for consumer
+        if (sem_wait(&fill) == -1) {
+            perror("sem_wait() failed");
+            exit(EXIT_FAILURE);
+        }
+
+        err = pthread_mutex_lock(&mutex);
+        if (err) {
+            perror("pthread_mutex_lock() failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (consumed < n) {
+            val = shift();
+            root = sqrt(val);
+            if (root * root == val) {
+                printf("%d %d %d\n", id ,val, root);
+            }
+            ++consumed;
+        }
+
+        err = pthread_mutex_unlock(&mutex);
+        if (err) {
+            perror("pthread_mutex_unlock() failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (sem_post(&empty) == -1) {
+            perror("sem_post() failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (sem_post(&fill) == -1) {
+        perror("sem_post() failed");
+        exit(EXIT_FAILURE);
     }
 
     return NULL;
@@ -94,6 +142,16 @@ void push(int val) {
         buffer_end = 0;
     }
     buffer[buffer_end] = val;
+}
+
+int shift() {
+    // this function assumes buffer is not empty
+    if (buffer_start < b - 1) {
+        ++buffer_start;
+    } else {
+        buffer_start = 0;
+    }
+    return buffer[buffer_start];
 }
 
 void create_thread(pthread_t *thread, void *(*start_routine) (void *), void *arg) {
@@ -154,7 +212,11 @@ void initialise_buffer() {
         perror("pthread_mutex_init() failed");
         exit(EXIT_FAILURE);
     }
-    if (sem_init(&buffer_size, 0, b) == -1) {
+    if (sem_init(&fill, 0, 0) == -1) {
+        perror("sem_init() failed");
+        exit(EXIT_FAILURE);
+    }
+    if (sem_init(&empty, 0, b) == -1) {
         perror("sem_init() failed");
         exit(EXIT_FAILURE);
     }
