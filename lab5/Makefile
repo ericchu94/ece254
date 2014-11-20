@@ -1,9 +1,12 @@
 produce : lab5.o
-	cc -pthread -O3 -o produce lab5.o
+	gcc -pthread -O3 -o produce lab5.o
+
+debug: lab5.c lab5.h
+	gcc -g -Wall -pthread -o d lab5.c
 
 lab5.o : lab5.c lab5.h
-	cc -O3 -Wall -c -o lab5.o lab5.c
+	gcc -O3 -Wall -c -o lab5.o lab5.c
 
 .PHONY : clean
 clean :
-	rm -f produce lab5.o
+	rm -f produce d lab5.o
